@@ -74,8 +74,9 @@ const Register = () => {
             <BiImageAdd className="icon" />
             <span>Add an avatar</span>
           </label>
-          <button>Sign up</button>
-          {err && <span>Something went error</span>}
+          <button disabled={loading}>Sign up</button>
+          {loading && "Uploading and compressing the image please wait..."}
+          {err && <span>Something went wrong</span>}
         </form>
         <p>You do have an account? <Link className="link" to="/login">Login</Link></p>
         <div className="redesLaunch">
@@ -89,6 +90,6 @@ const Register = () => {
 
     </div>
   );
-}
+};
 
 export default Register;
