@@ -6,12 +6,15 @@ import { doc, setDoc } from "firebase/firestore";
 import { BiImageAdd } from "react-icons/bi";
 import { Link, useNavigate } from "react-router-dom";
 import { Icon } from '@iconify/react';
-function Register() {
 
+
+const Register = () => {
   const [err, setErr] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
+    setLoading(true);
     e.preventDefault();
     const displayName = e.target[0].value;
     const email = e.target[1].value;
@@ -19,38 +22,42 @@ function Register() {
     const file = e.target[3].files[0];
 
     try {
+      //Create user
       const res = await createUserWithEmailAndPassword(auth, email, password);
-      const storageRef = ref(storage, displayName);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      
-      uploadTask.on(
-        (error) => {
-          setErr(true);
-        },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+
+      //Create a unique image name
+      const date = new Date().getTime();
+      const storageRef = ref(storage, `${displayName + date}`);
+
+      await uploadBytesResumable(storageRef, file).then(() => {
+        getDownloadURL(storageRef).then(async (downloadURL) => {
+          try {
+            //Update profile
             await updateProfile(res.user, {
               displayName,
               photoURL: downloadURL,
-             
             });
-
-            await setDoc(doc(db, "users", res.user.uid),{
+            //create user on firestore
+            await setDoc(doc(db, "users", res.user.uid), {
               uid: res.user.uid,
               displayName,
               email,
               photoURL: downloadURL,
             });
 
-            await setDoc(doc(db,"userChats",res.user.uid),{});
+            //create empty user chats on firestore
+            await setDoc(doc(db, "userChats", res.user.uid), {});
             navigate("/");
-
-          });
-        }
-      );
-      
+          } catch (err) {
+            console.log(err);
+            setErr(true);
+            setLoading(false);
+          }
+        });
+      });
     } catch (err) {
       setErr(true);
+      setLoading(false);
     }
   };
   return (
